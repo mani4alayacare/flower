@@ -1,18 +1,29 @@
 version: 2.1
 
 orbs:
-  aws-ecr: circleci/aws-ecr@x.y.z
-  aws-ecs: circleci/aws-ecs@0x.y.z
+  cicd: alayacare/cicd@1
+
+parameters:
+  backend-docker-imagename:
+    type: string
+    default: flower-backend
+  backend-path:
+    type: string
+    default: ""
+  backend-docker-filename:
+    type: string
+    default: "Dockerfile"
 
 workflows:
-  build-and-deploy:
+  ci-workflow:
     jobs:
-      - aws-ecr/build-and-push-image:
-          repo: "${AWS_RESOURCE_NAME_PREFIX}"
-          tag: "${CIRCLE_SHA1}"
-      - aws-ecs/deploy-service-update:
-          requires:
-            - aws-ecr/build-and-push-image
-          family: "${AWS_RESOURCE_NAME_PREFIX}-service"
-          cluster: "${AWS_RESOURCE_NAME_PREFIX}-cluster"
-          container-image-name-updates: "container=${AWS_RESOURCE_NAME_PREFIX}-service,tag=${CIRCLE_SHA1}"
+      - cicd/build:
+          name: build
+          path: << pipeline.parameters.backend-path >>
+          has-test-stage: false
+          docker-imagename: <<pipeline.parameters.backend-docker-imagename>>
+          docker-filename: <<pipeline.parameters.backend-docker-filename>>
+          context:
+            - aws-ecr
+            - github-app
+            - docker-hub
