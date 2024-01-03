@@ -47,8 +47,6 @@ workflows:
           tag: <<pipeline.parameters.backend-tag>>,$CIRCLE_BRANCH-$SHORT_SHA1
           pre-steps:
             - cicd/setup-short-sha1
-          requires:
-            - run-sonarcloud
           context:
             - aws-ecr
             - github-app
