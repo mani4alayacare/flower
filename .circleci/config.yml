@@ -1,0 +1,52 @@
+version: 2.1
+
+orbs:
+  cicd: alayacare/cicd@1
+
+parameters:
+  backend-docker-imagename:
+    type: string
+    default: flower-backend
+  backend-path:
+    type: string
+    default: ""
+  backend-docker-filename:
+    type: string
+    default: "Dockerfile"
+  trunk-branch:
+    type: string
+    default: master
+    description: Main branch of the repository. The pipeline will push a `latest` tag when running the CI on it
+  backend-tag:
+    type: string
+    default: $CIRCLE_BRANCH,$CIRCLE_SHA1
+
+workflows:
+  ci-workflow:
+    jobs:
+      - cicd/build:
+          name: build
+          path: << pipeline.parameters.backend-path >>
+          has-test-stage: false
+          docker-imagename: <<pipeline.parameters.backend-docker-imagename>>
+          docker-filename: <<pipeline.parameters.backend-docker-filename>>
+          before-build:
+            - cicd/get-git-version
+          context:
+            - aws-ecr
+            - github-app
+            - docker-hub
+      - cicd/push:
+          name: push
+          with-skopeo: true
+          path: <<pipeline.parameters.backend-path>>
+          has-test-stage: false
+          docker-imagename: <<pipeline.parameters.backend-docker-imagename>>
+          master-branch-name: <<pipeline.parameters.trunk-branch>>
+          current-git-branch: <<pipeline.git.branch>>
+          tag: <<pipeline.parameters.backend-tag>>,$CIRCLE_BRANCH-$SHORT_SHA1
+          pre-steps:
+            - cicd/setup-short-sha1
+          context:
+            - aws-ecr
+            - github-app
